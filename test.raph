@@ -1,0 +1,23 @@
+clear = (1200, 1200);
+
+if rand > +0.05e+1
+	origin = (700, 500);
+else
+	origin = (500, 700);
+end
+
+unless -rand ** rand ** rand < 5.0e-1
+	scale = (16, 24);
+else
+	scale = (24, 16);
+end
+
+begin
+	rot = 2 * PI * rand;
+end
+
+for t from 0 to 2 * PI step PI / 12
+	# draw(sin(t), cos(t));
+end
+
+# save();
