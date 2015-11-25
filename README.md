@@ -109,12 +109,16 @@ Raph
 		;
 	dec-digits
 		= dec-digit-letter , { dec-digit-letter }
+		;
 	hex-digits
 		= hex-digit-letter , { hex-digit-letter }
+		;
 	dex-numeric
 		= [ sign-letter ] ,        dec-digits , [ "." , dec-digits ] , [ [ "e" | "E" ] , [ sign-letter ] , dec-digits ]
+		;
 	hex-numeric
 		= [ sign-letter ] , "0x" , hex-digits , [ "." , hex-digits ] , [ [ "p" | "P" ] , [ sign-letter ] , hex-digits ]
+		;
 	numeric-literal
 		= dex-numeric | hex-numeric
 		;
