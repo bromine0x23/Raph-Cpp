@@ -4,6 +4,7 @@
 #include <memory>
 #include <ostream>
 #include <string>
+#include <boost/type_erasure/any.hpp>
 
 namespace br {
 
@@ -107,23 +108,42 @@ namespace br {
 		std::shared_ptr<Expression> m_x, m_y;
 	};
 
-	class Function : public Expression {
+	class FunctionCall : public Expression {
 	public:
-		Function(
-			std::string const & id,
+		FunctionCall(
+			std::shared_ptr<Expression> func,
 			std::shared_ptr< std::list< std::shared_ptr<Expression> > > args
-		) noexcept : m_id(id), m_args(args) {
+		) noexcept : m_func(func), m_args(args) {
 		}
 
-		virtual ~Function() noexcept;
+		virtual ~FunctionCall() noexcept;
 
 		virtual void invoke() const override;
 
 		virtual void print(std::ostream & ostream, std::size_t indent = 0) const override;
 
 	private:
-		std::string m_id;
+		std::shared_ptr<Expression> m_func;
 		std::shared_ptr< std::list< std::shared_ptr<Expression> > > m_args;
+	};
+
+	class ArrayAccess : public Expression {
+	public:
+		ArrayAccess(
+			std::shared_ptr<Expression> var,
+			std::shared_ptr<Expression> index
+		) noexcept : m_var(var), m_index(index) {
+		}
+
+		virtual ~ArrayAccess() noexcept;
+
+		virtual void invoke() const override;
+
+		virtual void print(std::ostream & ostream, std::size_t indent = 0) const override;
+
+	private:
+		std::shared_ptr<Expression> m_var;
+		std::shared_ptr<Expression> m_index;
 	};
 
 	class UnaryOperation : public Expression {

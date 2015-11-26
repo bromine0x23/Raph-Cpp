@@ -65,18 +65,32 @@ namespace br {
 		m_y->print(ostream, indent + 1);
 	}
 
-	Function::~Function() noexcept {
+	FunctionCall::~FunctionCall() noexcept {
 	}
 
-	void Function::invoke() const {
+	void FunctionCall::invoke() const {
 		// TODO: m_id(m_args);
 	}
 
-	void Function::print(std::ostream & ostream, std::size_t indent) const {
-		ostream << std::string(indent, '\t') << "<Function>: " << m_id << std::endl;
+	void FunctionCall::print(std::ostream & ostream, std::size_t indent) const {
+		ostream << std::string(indent, '\t') << "<FunctionCall>: " << std::endl;
+		m_func->print(ostream, indent + 1);
 		for (auto const & arg : *m_args) {
 			arg->print(ostream, indent + 1);
 		}
+	}
+
+	ArrayAccess::~ArrayAccess() noexcept {
+	}
+
+	void ArrayAccess::invoke() const {
+		// TODO: m_var(m_indes);
+	}
+
+	void ArrayAccess::print(std::ostream & ostream, std::size_t indent) const {
+		ostream << std::string(indent, '\t') << "<ArrayAccess>: " << std::endl;
+		m_var->print(ostream, indent + 1);
+		m_index->print(ostream, indent + 1);
 	}
 
 	UnaryOperation::~UnaryOperation() noexcept {

@@ -5,9 +5,10 @@ Raph
 
 编译依赖
 ----
-* CMake
-* Flex
-* Bison
+* CMake 3.3
+* Flex 2.5
+* Bison 3.0
+* Boost 1.59
 
 语法
 ----
@@ -21,11 +22,9 @@ Raph
 		= statements { delimiter }
 		;
 	statement
-		= "begin" , compound-statement "end"
-		| "if"     , expression , then , compound-statement , [ "else" , compound-statement ] , "end"
-		| "unless" , expression , then , compound-statement , [ "else" , compound-statement ] , "end"
-		| "while" , expression , do , compound-statement , "end"
-		| "until" , expression , do , compound-statement , "end"
+		= "begin" , compound-statement , "end"
+		| ( "if" | "unless" ) , expression , then , compound-statement , [ "else" , compound-statement ] , "end"
+		| ( "while" | "until" ) , expression , do , compound-statement , "end"
 		| "for" , variable , "from" , expression , "to" , expression , "step" , expression , compound-statement , "end"
 		| variable , "=" , expression
 		| expression
@@ -63,13 +62,20 @@ Raph
 	unary-expression
 		= [ "!" | "+" | "-" ] primary-expression
 		;
+	postfix-expression
+		= primary-expression ,
+			{
+				( "(" , [ expression, { "," , expression } ] , ")" )
+			|
+				( "[" ,   expression                         , "]" )
+			}
+		;
 	primary-expression
 		= variable
 		| constant
 		| numeric-literal
 		| boolean-literal
 		| "(" , expression , "," , expression , ")"
-		| function , "(",  [ expression, { "," , expression } ] , ")"
 		;
 	lowercase-letter
 		= "a" | "b" | "c" | "d" | "e" | "f" | "g"
@@ -89,15 +95,10 @@ Raph
 	identifier-letter
 		= lowercase-letter | uppercase-letter | digit-letter | "_" ;
 	variable
-		= ( lowercase-letter { identifier-letter } ) - function
+		= ( lowercase-letter | "_" ) , { identifier-letter }
 		;
 	constant
-		= ( uppercase-letter { identifier-letter } )
-		;
-	function
-		= (* implementation dependent *)
-	sign
-		= "+" | "-"
+		= ( uppercase-letter | "_" ) , { identifier-letter }
 		;
 	dec-digit
 		= "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9"
@@ -114,10 +115,10 @@ Raph
 		= hex-digit-letter , { hex-digit-letter }
 		;
 	dex-numeric
-		= [ sign-letter ] ,        dec-digits , [ "." , dec-digits ] , [ [ "e" | "E" ] , [ sign-letter ] , dec-digits ]
+		= [ "+" | "-" ] ,        dec-digits , [ "." , dec-digits ] , [ [ "e" | "E" ] , [ "+" | "-" ] , dec-digits ]
 		;
 	hex-numeric
-		= [ sign-letter ] , "0x" , hex-digits , [ "." , hex-digits ] , [ [ "p" | "P" ] , [ sign-letter ] , hex-digits ]
+		= [ "+" | "-" ] , "0x" , hex-digits , [ "." , hex-digits ] , [ [ "p" | "P" ] , [ "+" | "-" ] , hex-digits ]
 		;
 	numeric-literal
 		= dex-numeric | hex-numeric

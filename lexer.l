@@ -16,12 +16,12 @@ static br::Location location;
 blank       [ \t\v\f\r]+
 comment     ("--"|"//"|\#).*$
 
-lower       [a-z_]
+lower       [a-z]
 upper       [A-Z]
 digit       [0-9]
-letter      {lower}|{upper}|{digit}
-variable    {lower}{letter}*
-constant    {upper}{letter}*
+letter      {lower}|{upper}|{digit}|[_]
+variable    ({lower}|[_]){letter}*
+constant    ({upper}|[_]){letter}*
 
 sign        [+-]
 dec         [0-9]
@@ -60,6 +60,14 @@ hex_numeric {hex_lead}{hex_base}{hex_exp}?
 
 ")" {
 	return br::Parser::make_SYMBOL_RPAREN(location);
+}
+
+"[" {
+	return br::Parser::make_SYMBOL_LSQUARE(location);
+}
+
+"]" {
+	return br::Parser::make_SYMBOL_RSQUARE(location);
 }
 
 "," {
@@ -196,10 +204,6 @@ hex_numeric {hex_lead}{hex_base}{hex_exp}?
 
 {variable} {
 	return br::Parser::make_TOKEN_VARIABLE(yytext, location);
-}
-
-{constant} {
-	return br::Parser::make_TOKEN_CONSTANT(yytext, location);
 }
 
 {dec_numeric}|{hex_numeric} {

@@ -6,7 +6,7 @@ else
 	origin = (500, 700);
 end
 
-unless -rand ** rand ** rand < 5.0e-1
+unless -rand < -5.0e-1
 	scale = (16, 24);
 else
 	scale = (24, 16);
@@ -17,7 +17,8 @@ begin
 end
 
 for t from 0 to 2 * PI step PI / 12
-	# draw(sin(t), cos(t));
+	draw(scale[0] * sin(t), scale[1] * cos(t));
+	draw(scale[1] * sin(t), scale[0] * cos(t));
 end
 
-# save();
+save();

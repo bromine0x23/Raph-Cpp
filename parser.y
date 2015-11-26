@@ -48,6 +48,8 @@ namespace br {
 	SYMBOL_LT          60 "<"
 	SYMBOL_ASSIGN      61 "="
 	SYMBOL_GT          62 ">"
+	SYMBOL_LSQUARE     91 "["
+	SYMBOL_RSQUARE     93 "]"
 	SYMBOL_OR             "||"
 	SYMBOL_AND            "&&"
 	SYMBOL_EQL            "=="
@@ -62,7 +64,6 @@ namespace br {
 %token <std::string>
 	TOKEN_VARIABLE
 	TOKEN_CONSTANT
-	TOKEN_FUNCTION
 
 %token
 	KEYWORD_BEGIN  "begin"
@@ -102,6 +103,7 @@ namespace br {
 	multiplicative-expression
 	power-expression
 	unary-expression
+	postfix-expression
 	primary-expression
 
 %type< std::shared_ptr< std::list< std::shared_ptr<Expression> > > >
@@ -296,7 +298,7 @@ power-expression[res]
 	;
 
 unary-expression[res]
-	: primary-expression { $$ = $1; }
+	: postfix-expression { $$ = $1; }
 	| "!" unary-expression[rhs]
 		{
 			$[res] = std::make_shared<UnaryOperation>("!", $[rhs]);
@@ -311,6 +313,17 @@ unary-expression[res]
 		}
 	;
 
+postfix-expression[expr]
+	: primary-expression { $$ = $1; }
+	| postfix-expression[func] "(" optional-arguments[args] ")"
+		{
+			$[expr] = std::make_shared<FunctionCall>($[func], $[args]);
+		}
+	| postfix-expression[var] "[" expression[index] "]"
+		{
+			$[expr] = std::make_shared<ArrayAccess>($[var], $[index]);
+		}
+	;
 primary-expression[expr]
 	: TOKEN_VARIABLE[id]
 		{
@@ -331,10 +344,6 @@ primary-expression[expr]
 	| "(" expression[x] "," expression[y] ")"
 		{
 			$[expr] = std::make_shared<Vector>($[x], $[y]);
-		}
-	| TOKEN_FUNCTION[id] "(" optional-arguments[arguments] ")"
-		{
-			$[expr] = std::make_shared<Function>($[id], $[arguments]);
 		}
 	;
 
