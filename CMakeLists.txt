@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 3.3)
 project(Raph C CXX)
 
+list(APPEND CMAKE_PREFIX_PATH C:/software/msys64/usr)
+include_directories(C:/software/msys64/usr/include)
+link_directories(C:/software/msys64/usr/lib)
+
 find_package(BISON REQUIRED)
 find_package(FLEX REQUIRED)
 find_package(Boost REQUIRED)
@@ -21,6 +25,7 @@ string(REPLACE ";" " " BISION_COMPILE_FLAGS " ${BISION_COMPILE_FLAGS}")
 bison_target(Parser parser.y ${CMAKE_SOURCE_DIR}/gen/parser.cpp COMPILE_FLAGS ${BISION_COMPILE_FLAGS})
 
 set(FLEX_COMPILE_FLAGS "")
+# list(APPEND FLEX_COMPILE_FLAGS --header-file=gen/lexer.hpp)
 if (CMAKE_BUILD_TYPE MATCHES "Debug")
 	list(APPEND FLEX_COMPILE_FLAGS --debug)
 	list(APPEND FLEX_COMPILE_FLAGS --verbose)

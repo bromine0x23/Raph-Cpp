@@ -1,17 +1,12 @@
-%option noyywrap nounput batch debug noinput
-
-%{
-#include <cerrno>
-#include <cstdio>
-#include <cstdlib>
-#include "../raph.hpp"
+%option batch
+%option noyywrap nounput noinput
+%option reentrant
+%top{
+#include <cstddef>
+#include <memory>
 #include "parser.hpp"
-#include "../location.hpp"
-
-static br::Location location;
-
-#define YY_USER_ACTION location.columns(yyleng);
-%}
+#define YY_USER_ACTION yylloc->columns(yyleng);
+}
 
 blank       [ \t\v\f\r]+
 comment     ("--"|"//"|\#).*$
@@ -36,204 +31,146 @@ dec_numeric {dec_lead}{dec_base}{dec_exp}?
 hex_numeric {hex_lead}{hex_base}{hex_exp}?
 
 %%
-
 %{
-	location.step();
+	yylloc->step();
 %}
-
 {blank} {
-	location.step();
+	yylloc->step();
 }
-
 {comment} {
-	location.step();
+	yylloc->step();
 }
-
 "\n"+ {
-	location.lines(yyleng);
-	return br::Parser::make_SYMBOL_NEWLINE(location);
+	yylloc->lines(yyleng);
+	return br::Parser::token::SYMBOL_NEWLINE;
 }
-
 "(" {
-	return br::Parser::make_SYMBOL_LPAREN(location);
+	return br::Parser::token::SYMBOL_LPAREN;
 }
-
 ")" {
-	return br::Parser::make_SYMBOL_RPAREN(location);
+	return br::Parser::token::SYMBOL_RPAREN;
 }
-
 "[" {
-	return br::Parser::make_SYMBOL_LSQUARE(location);
+	return br::Parser::token::SYMBOL_LSQUARE;
 }
-
 "]" {
-	return br::Parser::make_SYMBOL_RSQUARE(location);
+	return br::Parser::token::SYMBOL_RSQUARE;
 }
-
 "," {
-	return br::Parser::make_SYMBOL_COMMA(location);
+	return br::Parser::token::SYMBOL_COMMA;
 }
-
 ";" {
-	return br::Parser::make_SYMBOL_SEMICOLON(location);
+	return br::Parser::token::SYMBOL_SEMICOLON;
 }
-
 "||" {
-	return br::Parser::make_SYMBOL_OR(location);
+	return br::Parser::token::SYMBOL_OR;
 }
-
 "&&" {
-	return br::Parser::make_SYMBOL_AND(location);
+	return br::Parser::token::SYMBOL_AND;
 }
-
 "==" {
-	return br::Parser::make_SYMBOL_EQL(location);
+	return br::Parser::token::SYMBOL_EQL;
 }
-
 "=" {
-	return br::Parser::make_SYMBOL_ASSIGN(location);
+	return br::Parser::token::SYMBOL_ASSIGN;
 }
-
 "!=" {
-	return br::Parser::make_SYMBOL_NEQ(location);
+	return br::Parser::token::SYMBOL_NEQ;
 }
-
 "!" {
-	return br::Parser::make_SYMBOL_LOGICAL_NOT(location);
+	return br::Parser::token::SYMBOL_LOGICAL_NOT;
 }
-
 "<=" {
-	return br::Parser::make_SYMBOL_LE(location);
+	return br::Parser::token::SYMBOL_LE;
 }
-
 "<" {
-	return br::Parser::make_SYMBOL_LT(location);
+	return br::Parser::token::SYMBOL_LT;
 }
-
 ">=" {
-	return br::Parser::make_SYMBOL_GE(location);
+	return br::Parser::token::SYMBOL_GE;
 }
-
 ">" {
-	return br::Parser::make_SYMBOL_GT(location);
+	return br::Parser::token::SYMBOL_GT;
 }
-
 "+" {
-	return br::Parser::make_SYMBOL_PLUS(location);
+	return br::Parser::token::SYMBOL_PLUS;
 }
-
 "-" {
-	return br::Parser::make_SYMBOL_MINUS(location);
+	return br::Parser::token::SYMBOL_MINUS;
 }
-
 "**" {
-	return br::Parser::make_SYMBOL_POW(location);
+	return br::Parser::token::SYMBOL_POW;
 }
-
 "*" {
-	return br::Parser::make_SYMBOL_ASTERISK(location);
+	return br::Parser::token::SYMBOL_ASTERISK;
 }
-
 "/" {
-	return br::Parser::make_SYMBOL_SLASH(location);
+	return br::Parser::token::SYMBOL_SLASH;
 }
-
 "%" {
-	return br::Parser::make_SYMBOL_PERSENT(location);
+	return br::Parser::token::SYMBOL_PERSENT;
 }
-
 "begin" {
-	return br::Parser::make_KEYWORD_BEGIN(location);
+	return br::Parser::token::KEYWORD_BEGIN;
 }
-
 "end" {
-	return br::Parser::make_KEYWORD_END(location);
+	return br::Parser::token::KEYWORD_END;
 }
-
 "if" {
-	return br::Parser::make_KEYWORD_IF(location);
+	return br::Parser::token::KEYWORD_IF;
 }
-
 "unless" {
-	return br::Parser::make_KEYWORD_UNLESS(location);
+	return br::Parser::token::KEYWORD_UNLESS;
 }
-
 "then" {
-	return br::Parser::make_KEYWORD_THEN(location);
+	return br::Parser::token::KEYWORD_THEN;
 }
-
 "else" {
-	return br::Parser::make_KEYWORD_ELSE(location);
+	return br::Parser::token::KEYWORD_ELSE;
 }
-
 "while" {
-	return br::Parser::make_KEYWORD_WHILE(location);
+	return br::Parser::token::KEYWORD_WHILE;
 }
-
 "until" {
-	return br::Parser::make_KEYWORD_UNTIL(location);
+	return br::Parser::token::KEYWORD_UNTIL;
 }
-
 "do" {
-	return br::Parser::make_KEYWORD_DO(location);
+	return br::Parser::token::KEYWORD_DO;
 }
-
 "for" {
-	return br::Parser::make_KEYWORD_FOR(location);
+	return br::Parser::token::KEYWORD_FOR;
 }
-
 "from" {
-	return br::Parser::make_KEYWORD_FROM(location);
+	return br::Parser::token::KEYWORD_FROM;
 }
-
 "to" {
-	return br::Parser::make_KEYWORD_TO(location);
+	return br::Parser::token::KEYWORD_TO;
 }
-
 "step" {
-	return br::Parser::make_KEYWORD_STEP(location);
+	return br::Parser::token::KEYWORD_STEP;
 }
-
 "true" {
-	return br::Parser::make_KEYWORD_TRUE(location);
+	return br::Parser::token::KEYWORD_TRUE;
 }
-
 "false" {
-	return br::Parser::make_KEYWORD_FALSE(location);
+	return br::Parser::token::KEYWORD_FALSE;
 }
-
 {variable} {
-	return br::Parser::make_TOKEN_VARIABLE(yytext, location);
+	yylval->build<std::string>() = yytext;
+	return br::Parser::token::TOKEN_VARIABLE;
 }
-
+{constant} {
+	yylval->build<std::string>() = yytext;
+	return br::Parser::token::TOKEN_CONSTANT;
+}
 {dec_numeric}|{hex_numeric} {
-	return br::Parser::make_TOKEN_NUMERIC(std::stod(yytext), location);
+	yylval->build<double>() = std::stod(yytext);
+	return br::Parser::token::TOKEN_NUMERIC;
 }
-
 . {
-	raph.error(location, "Invalid character");
+	parser.error(*yylloc, "Invalid character");
 }
-
 <<EOF>> {
-	return br::Parser::make_END_OF_FILE(location);
+	return br::Parser::token::END_OF_FILE;
 }
-
 %%
-
-namespace br {
-
-	void Raph::scan_begin() {
-		yy_flex_debug = trace_scanning;
-		if (filename.empty() || filename == "-") {
-			yyin = stdin;
-		} else if (!(yyin = fopen(filename.c_str(), "r"))) {
-			error("cannot open " + filename + ": " + strerror(errno));
-			exit(EXIT_FAILURE);
-		}
-	}
-
-	void Raph::scan_end() {
-		fclose(yyin);
-	}
-
-}

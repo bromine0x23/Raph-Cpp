@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <string>
 #include <ostream>
 #include <memory>
@@ -10,16 +11,9 @@ namespace br {
 	class Position {
 	public:
 		/// Construct a position.
-		explicit Position(std::shared_ptr<std::string> const & f = nullptr, unsigned int l = 1u, unsigned int c = 1u)
-				: filename(f), line (l), column (c)
+		explicit Position(std::shared_ptr<std::string> const & filename = nullptr, unsigned int line = 1, unsigned int column = 1)
+				: filename(filename), line(line), column(column)
 		{
-		}
-
-		/// Initialization.
-		void initialize (std::shared_ptr<std::string> const & f = nullptr, unsigned int l = 1u, unsigned int c = 1u) {
-			filename = f;
-			line = l;
-			column = c;
 		}
 
 		/** \name Line and Column related manipulators
@@ -27,14 +21,14 @@ namespace br {
 		/// (line related) Advance to the COUNT next lines.
 		void lines(int count = 1) {
 			if (count != 0) {
-				column = 1u;
-				line = add_(line, count, 1);
+				column = 1;
+				line = m_add(line, count, 1);
 			}
 		}
 
 		/// (column related) Advance to the COUNT next columns.
 		void columns(int count = 1) {
-			column = add_(column, count, 1);
+			column = m_add(column, count, 1);
 		}
 		/** \} */
 
@@ -65,8 +59,8 @@ namespace br {
 		}
 
 		auto operator==(Position const & other) const -> bool {
-			return line == other.line && column == other.column && (
-				filename == other.filename || (filename != nullptr && other.filename != nullptr && *filename == *other.filename)
+			return line == other.line && column == other.column &&
+					(filename == other.filename || (filename != nullptr && other.filename != nullptr && *filename == *other.filename)
 			);
 		}
 
@@ -74,6 +68,7 @@ namespace br {
 			return !operator==(other);
 		}
 
+	public:
 		/// File name to which this position refers.
 		std::shared_ptr<std::string> filename;
 		/// Current line number.
@@ -83,38 +78,36 @@ namespace br {
 
 	private:
 		/// Compute max(min, lhs+rhs) (provided min <= lhs).
-		static auto add_(unsigned int lhs, int rhs, unsigned int min) -> unsigned int {
+		static auto m_add(unsigned int lhs, int rhs, unsigned int min) -> unsigned int {
 			return (0 < rhs || -static_cast<unsigned int>(rhs) < lhs ? rhs + lhs : min);
 		}
 	};// class Position
 
 	template< typename TChar >
-	inline auto operator<<(std::basic_ostream<TChar> & ostr, Position const & position) -> std::basic_ostream<TChar> & {
+	inline auto operator<<(std::basic_ostream<TChar> & stream, Position const & position) -> std::basic_ostream<TChar> & {
 		if (position.filename != nullptr) {
-			ostr << *position.filename << ':';
+			stream << *position.filename << ':';
 		}
-		return ostr << position.line << '.' << position.column;
+		return stream << position.line << '.' << position.column;
 	}
 
 	/// Abstract a location.
 	class Location {
 	public:
 		/// Construct a location from \a b to \a e.
-		Location(const Position & b, const Position & e) : begin(b), end(e) {
+		Location(Position const & begin, Position const & end) : begin(begin), end(end) {
 		}
 
 		/// Construct a 0-width location in \a p.
-		explicit Location(const Position & p = Position()) : begin(p), end(p) {
+		explicit Location(Position const & position = Position()) : begin(position), end(position) {
 		}
 
 		/// Construct a 0-width location in \a f, \a l, \a c.
-		explicit Location(std::shared_ptr<std::string> const & f, unsigned int l = 1u, unsigned int c = 1u) : begin(f, l, c), end(f, l, c) {
-		}
-
-		/// Initialization.
-		void initialize(std::shared_ptr<std::string> f = nullptr, unsigned int l = 1u, unsigned int c = 1u) {
-			begin.initialize(f, l, c);
-			end = begin;
+		explicit Location(
+			std::shared_ptr<std::string> const & filename,
+			unsigned int line = 1,
+			unsigned int column = 1
+		) : begin(filename, line, column), end(filename, line, column) {
 		}
 
 		/** \name Line and Column related manipulators
@@ -195,17 +188,17 @@ namespace br {
 	 ** Avoid duplicate information.
 	 */
 	template< typename TChar >
-	inline auto operator<<(std::basic_ostream< TChar > & ostr, const Location & location) -> std::basic_ostream< TChar > & {
+	inline auto operator<<(std::basic_ostream< TChar > & stream, Location const & location) -> std::basic_ostream< TChar > & {
 		unsigned int end_column = 0 < location.end.column ? location.end.column - 1 : 0;
-		ostr << location.begin;
+		stream << location.begin;
 		if (location.end.filename != nullptr && (location.begin.filename == nullptr || *location.begin.filename != *location.end.filename)) {
-			ostr << '-' << location.end.filename << ':' << location.end.line << '.' << end_column;
+			stream << '-' << location.end.filename << ':' << location.end.line << '.' << end_column;
 		} else if (location.begin.line < location.end.line) {
-			ostr << '-' << location.end.line << '.' << end_column;
+			stream << '-' << location.end.line << '.' << end_column;
 		} else if (location.begin.column < end_column) {
-			ostr << '-' << end_column;
+			stream << '-' << end_column;
 		}
-		return ostr;
+		return stream;
 	}
 
 } // br

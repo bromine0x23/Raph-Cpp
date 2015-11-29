@@ -1,37 +1,54 @@
-%define api.namespace {br}
-%define parser_class_name { Parser }
-%define api.token.constructor
-%define api.value.type variant
-%define api.location.type {br::Location}
-%define parse.assert
-%define parse.trace
-%define parse.error verbose
-%token-table
-
 %code requires{
 #include <string>
 #include <memory>
 #include <list>
 #include "../ast.hpp"
 #include "../location.hpp"
-
-#define YY_NULLPTR nullptr
-
-namespace br {
-	class Raph;
-}
-}
-
-%code {
 #include "../raph.hpp"
+#define YY_NULLPTR nullptr
+#define YY_DECL int yylex(br::Parser::semantic_type * yylval, br::Parser::location_type * yylloc, void * yyscanner, br::RaphParser const & parser)
 }
-
+%code provides{
+extern "C" {
+	YY_DECL;
+	using YYScan = void *;
+	using YYSize = std::size_t;
+#define YY_EXTRA_TYPE std::nullptr_t
+	auto yyalloc(YYSize size, YYScan scanner) -> void *;
+	auto yyrealloc(void * ptr, YYSize size, YYScan scanner) -> void *;
+	void yyfree(void *, YYScan scanner);
+	auto yylex_init(YYScan * scanner) -> int;
+	auto yylex_init_extra(YY_EXTRA_TYPE, YYScan * scanner) -> int;
+	auto yylex_destroy(YYScan scanner) -> int;
+	auto yyget_debug(YYScan scanner) -> int;
+	void yyset_debug(int debug_flag, YYScan scanner);
+	auto yyget_extra(YYScan scanner) -> YY_EXTRA_TYPE;
+	void yyset_extra(YY_EXTRA_TYPE,YYScan scanner);
+	auto yyget_in(YYScan scanner) -> FILE *;
+	void yyset_in(FILE * in_str, YYScan scanner);
+	auto yyget_out(YYScan scanner) -> FILE *;
+	void yyset_out(FILE * out_str, YYScan scanner);
+	auto yyget_leng(YYScan scanner) -> YYSize;
+	auto yyget_text(YYScan scanner) -> char *;
+	auto yyget_lineno(YYScan scanner) -> int;
+	void yyset_lineno(int line_number, YYScan scanner);
+	auto yyget_column(YYScan scanner) -> int;
+	void yyset_column(int column_no, YYScan scanner);
+} // extern "C"
+}
+%define api.namespace {br}
+%define api.value.type variant
+%define api.location.type {br::Location}
+%define parser_class_name { Parser }
+%define parse.assert
+%define parse.trace
 %locations
-%param { Raph & raph }
+%param { void * yyscanner }
+%param { RaphParser const & parser }
+%parse-param { std::shared_ptr<Program> & program }
 %initial-action {
-  @$.begin.filename = @$.end.filename = std::make_shared<std::string>(raph.filename);
+	@$.begin.filename = @$.end.filename = std::make_shared<std::string>(parser.filename());
 }
-
 %token
 	END_OF_FILE         0 "end of file"
 	SYMBOL_NEWLINE     10 "\n"
@@ -57,14 +74,6 @@ namespace br {
 	SYMBOL_LE             "<="
 	SYMBOL_GE             ">="
 	SYMBOL_POW            "**"
-
-%token <double>
-	TOKEN_NUMERIC
-
-%token <std::string>
-	TOKEN_VARIABLE
-	TOKEN_CONSTANT
-
 %token
 	KEYWORD_BEGIN  "begin"
 	KEYWORD_END    "end"
@@ -81,19 +90,20 @@ namespace br {
 	KEYWORD_STEP   "step"
 	KEYWORD_TRUE   "true"
 	KEYWORD_FALSE  "false"
-
-%type< std::shared_ptr<Program> >
+%token <double>
+	TOKEN_NUMERIC
+%token <std::string>
+	TOKEN_VARIABLE
+	TOKEN_CONSTANT
+%type < std::shared_ptr<Program> >
 	program
-
-%type< std::shared_ptr< std::list< std::shared_ptr<Statement> > > >
+%type < std::shared_ptr< std::list< std::shared_ptr<Statement> > > >
 	statements
-
-%type< std::shared_ptr<Statement> >
+%type < std::shared_ptr<Statement> >
 	statement
 	compound-statement
 	optional-else
-
-%type< std::shared_ptr<Expression> >
+%type < std::shared_ptr<Expression> >
 	expression
 	logical-or-expression
 	logical-and-expression
@@ -105,25 +115,19 @@ namespace br {
 	unary-expression
 	postfix-expression
 	primary-expression
-
-%type< std::shared_ptr< std::list< std::shared_ptr<Expression> > > >
+%type < std::shared_ptr< std::list< std::shared_ptr<Expression> > > >
 	optional-arguments
 	arguments
-
-%type<bool>
+%type <bool>
 	boolean-literal
-
 %start program
-
 %%
-
 program
 	: statements optional-delimiters
 		{
-			raph.program = $[program] = std::make_shared<Program>($[statements]);
+			program = $[program] = std::make_shared<Program>($[statements]);
 		}
 	;
-
 statements
 	: %empty
 		{
@@ -144,14 +148,12 @@ statements
 			$[statements] = std::make_shared< std::list< std::shared_ptr<Statement> > >();
 		}
 	;
-
 compound-statement
 	: statements optional-delimiters
 		{
 			$[compound-statement] = std::make_shared<CompoundStatement>($[statements]);
 		}
 	;
-
 statement
 	: "begin" compound-statement "end"
 		{
@@ -186,19 +188,16 @@ statement
 			$[statement] = std::make_shared<ExpressionStatement>($[expression]);
 		}
 	;
-
 then
 	: delimiter
 	| "then"
 	| delimiter "then"
 	;
-
 do
 	: delimiter
 	| "do"
 	| delimiter "do"
 	;
-
 optional-else
 	: %empty
 		{
@@ -209,11 +208,9 @@ optional-else
 			$[optional-else] = $[compound-statement];
 		}
 	;
-
 expression
 	: logical-or-expression { $$ = $1; }
 	;
-
 logical-or-expression[res]
 	: logical-and-expression { $$ = $1; }
 	| logical-or-expression[lhs] "||" logical-and-expression[rhs]
@@ -221,7 +218,6 @@ logical-or-expression[res]
 			$[res] = std::make_shared<BinaryOperation>("||", $[lhs], $[rhs]);
 		}
 	;
-
 logical-and-expression[res]
 	: equality-expression { $$ = $1; }
 	| logical-and-expression[lhs] "&&" equality-expression[rhs]
@@ -229,7 +225,6 @@ logical-and-expression[res]
 			$[res] = std::make_shared<BinaryOperation>("&&", $[lhs], $[rhs]);
 		}
 	;
-
 equality-expression[res]
 	: relation-expression { $$ = $1; }
 	| relation-expression[lhs] "==" relation-expression[rhs]
@@ -240,7 +235,6 @@ equality-expression[res]
 		{
 			$[res] = std::make_shared<BinaryOperation>("!=", $[lhs], $[rhs]);
 		}
-
 relation-expression[res]
 	: additive-expression { $$ = $1; }
 	| relation-expression[lhs] "<" additive-expression[rhs]
@@ -260,7 +254,6 @@ relation-expression[res]
 			$[res] = std::make_shared<BinaryOperation>(">=", $[lhs], $[rhs]);
 		}
 	;
-
 additive-expression[res]
 	: multiplicative-expression { $$ = $1; }
 	| additive-expression[lhs] "+" multiplicative-expression[rhs]
@@ -272,7 +265,6 @@ additive-expression[res]
 			$[res] = std::make_shared<BinaryOperation>("-", $[lhs], $[rhs]);
 		}
 	;
-
 multiplicative-expression[res]
 	: power-expression { $$ = $1; }
 	| multiplicative-expression[lhs] "*" power-expression[rhs]
@@ -288,7 +280,6 @@ multiplicative-expression[res]
 			$[res] = std::make_shared<BinaryOperation>("%", $[lhs], $[rhs]);
 		}
 	;
-
 power-expression[res]
 	: unary-expression { $$ = $1; }
 	| unary-expression[lhs] "**" power-expression[rhs]
@@ -296,7 +287,6 @@ power-expression[res]
 			$[res] = std::make_shared<BinaryOperation>("**", $[lhs], $[rhs]);
 		}
 	;
-
 unary-expression[res]
 	: postfix-expression { $$ = $1; }
 	| "!" unary-expression[rhs]
@@ -312,7 +302,6 @@ unary-expression[res]
 			$[res] = std::make_shared<UnaryOperation>("-", $[rhs]);
 		}
 	;
-
 postfix-expression[expr]
 	: primary-expression { $$ = $1; }
 	| postfix-expression[func] "(" optional-arguments[args] ")"
@@ -346,12 +335,10 @@ primary-expression[expr]
 			$[expr] = std::make_shared<Vector>($[x], $[y]);
 		}
 	;
-
 boolean-literal
 	: "true"  { $$ = true; }
 	| "false" { $$ = false; }
 	;
-
 optional-arguments[arguments]
 	: %empty
 		{
@@ -359,7 +346,6 @@ optional-arguments[arguments]
 		}
 	| arguments { $$ = $1; }
 	;
-
 arguments
 	: expression[argument]
 		{
@@ -371,24 +357,19 @@ arguments
 			$$->push_back($[expression]);
 		}
 	;
-
 optional-delimiters
 	: %empty
 	| delimiters
 	;
-
 delimiter
 	: ";"
 	| "\n"
 	;
-
 delimiters
 	: delimiter
 	| delimiters delimiter
 	;
-
 %%
-
 void br::Parser::error(location_type const & location, std::string const & message) {
-	raph.error(location, message);
+	parser.error(location, message);
 }

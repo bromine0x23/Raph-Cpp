@@ -1,46 +1,33 @@
 #pragma once
 
 #include <string>
-#include <map>
 #include <memory>
-#include <list>
 #include "ast.hpp"
 #include "location.hpp"
-#include "gen/parser.hpp"
 
 namespace br {
 
-	class Raph {
+	class RaphParser {
 	public:
-		Raph();
+		RaphParser(std::string const & filename, bool trace_scanning = false, bool trace_parsing = false);
 
-		virtual ~Raph();
+		virtual ~RaphParser();
 
-		void scan_begin();
+		auto filename() const -> std::string const & {
+			return m_filename;
+		}
 
-		void scan_end();
-
-		int parse(std::string const & filename);
+		std::shared_ptr<Program> parse() const;
 
 		void error(Location const & location, std::string const & message) const;
 
 		void error(std::string const & message) const;
 
-		std::string filename;
-
-		bool trace_scanning = false;
-
-		bool trace_parsing = false;
-
-		std::shared_ptr<Program> program;
-
 	private:
-		std::map<std::string, double> m_variables;
+		std::string m_filename;
 
-		// std::map<std::string, Function> m_functions;
-	};
+		bool m_trace_scanning;
+
+		bool m_trace_parsing;
+	}; // class RaphParser
 } // namespace br
-
-# define YY_DECL br::Parser::symbol_type yylex(br::Raph & raph)
-
-YY_DECL;
